@@ -1,0 +1,76 @@
+\chapter{Evaluation and Results}\label{chap:evaluation}
+
+\section{Evaluation Methodology}\label{sec:methodology}
+
+Comprehensive evaluation of the Mambo Whistle system addresses four complementary dimensions: functional correctness validated through automated testing, latency performance characterized through instrumented pipeline measurements, computational efficiency analyzed through algorithmic complexity evaluation, and deployment feasibility assessed through cross-browser compatibility testing. This multi-dimensional evaluation strategy provides confidence in system reliability while characterizing performance boundaries relevant to potential deployment scenarios.
+
+The automated test suite exercises system components through unit tests targeting individual modules and integration tests validating cross-component workflows. Test execution employs the Vitest framework, selected for its native ES module support and compatibility with browser-targeted code, with happy-dom providing DOM simulation for components requiring document access. The test suite accumulated organically during development as regression prevention for addressed bugs and verification for implemented features, with coverage metrics guiding identification of undertested code regions.
+
+Latency measurements instrument the audio processing pipeline at stage boundaries, recording timestamps through the high-resolution \texttt{performance.now()} interface and computing stage-wise latency contributions. The AudioWorklet processing thread presents measurement challenges as the standard Performance interface is unavailable in worklet scope, necessitating timestamp injection through the MessagePort interface and careful accounting for cross-thread communication overhead. Multiple measurement iterations under varying system load conditions characterize both typical and worst-case latency behavior.
+
+Computational complexity analysis applies theoretical algorithmic analysis to each pipeline stage, deriving asymptotic complexity expressions and computing operation counts for our specific configuration. These theoretical predictions are validated against empirical timing measurements, with discrepancies prompting investigation of implementation inefficiencies or measurement artifacts.
+
+Browser compatibility testing exercises system functionality across the major browser implementations---Chrome, Firefox, Safari, and Edge---on both desktop and mobile platforms. Testing validates both feature availability and performance characteristics, as browser implementations vary substantially in AudioWorklet efficiency and Web Audio API compliance.
+
+\section{Automated Test Coverage}\label{sec:test_coverage}
+
+The test suite comprises 235 individual test cases distributed across 13 test files, providing coverage spanning low-level algorithm correctness through high-level user interaction flows. Test distribution reflects the relative complexity and criticality of system components, with audio processing and state management receiving the most extensive coverage due to their foundational roles.
+
+The pitch detection test suite containing 48 tests exercises the PitchDetector module across its full interface, validating frequency-to-note and note-to-frequency conversions, smoothing behavior under various input patterns, confidence calculation across signal conditions, and edge case handling for boundary frequencies and invalid inputs. Particular attention addresses the bidirectional frequency-note conversion roundtrip, ensuring that converted values faithfully reproduce original inputs within acceptable tolerance.
+
+Audio I/O testing through 45 tests validates the AudioIO module responsible for audio context management, device enumeration, and microphone access. Tests verify correct lifecycle management through start, stop, and destroy operations, proper error handling and fallback behavior when preferred configurations are unavailable, and accurate latency calculation from audio context properties. The complexity of browser audio APIs and the diversity of possible runtime configurations necessitate extensive defensive testing against unusual but possible scenarios.
+
+State management validation through 32 tests ensures StateStore correctness across state update operations, subscriber notification, and state isolation. Tests verify that partial state updates correctly merge with existing state, that subscribers receive notifications for all state changes, and that state access returns consistent values within synchronous execution contexts.
+
+Integration testing through the ui-state-flow test file validates end-to-end workflows spanning user interaction through state change to UI update. These tests simulate button clicks and control manipulations, verify that expected state changes propagate through the StateStore, and confirm that UI rendering reflects the updated state. Integration tests provide confidence that individually correct components interact properly when composed into the complete system.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/tab1_test_coverage.jpg}
+  \caption{Distribution of automated test cases across system components, indicating test counts, primary coverage focus, and critical scenarios addressed. The table demonstrates comprehensive coverage of system functionality with emphasis proportional to component complexity and reliability requirements.}
+  \label{tab:test_distribution}
+\end{figure}
+
+\section{Latency Performance Analysis}\label{sec:latency}
+
+Latency characterization reveals that the Mambo Whistle system achieves 50--60 milliseconds end-to-end audio processing latency under typical conditions, comfortably within the 100-millisecond threshold identified in human-computer interaction literature as the limit for perceived simultaneity. This performance represents a significant achievement for browser-based audio processing, demonstrating that web technologies have matured sufficiently to support interactive musical applications previously requiring native code execution.
+
+The latency budget distributes across pipeline stages as follows. Microphone capture latency, determined by audio hardware and driver characteristics, contributes approximately 1.5 milliseconds on typical systems, though this value varies with audio interface quality. Buffer accumulation represents the largest single contributor at approximately 12 milliseconds average, reflecting the time required to accumulate the 1024-sample analysis window at 44.1kHz sample rate with 50\% overlap advancement. YIN pitch detection computation completes in approximately 0.5 milliseconds despite its $O(N^2)$ complexity, benefiting from modern CPU performance and optimized implementation. FFT computation and spectral feature extraction add approximately 0.1 milliseconds. MessagePort communication introduces under 1 millisecond overhead for cross-thread data transfer. Main thread synthesis and visualization processing contributes 0--5 milliseconds depending on concurrent activity, with DOM rendering for visual feedback adding approximately 16 milliseconds corresponding to the standard 60Hz display refresh rate.
+
+Comparison against the ScriptProcessor fallback implementation, provided for compatibility with older browsers lacking AudioWorklet support, demonstrates the substantial improvement enabled by dedicated audio thread execution. ScriptProcessor's minimum 2048-sample buffer requirement imposes 46.4 milliseconds buffer latency alone, compared to 2.9 milliseconds for AudioWorklet's 128-sample buffers. The total audio processing latency of approximately 50 milliseconds for ScriptProcessor compares unfavorably against AudioWorklet's approximately 6 milliseconds, representing an 8.4x improvement. This dramatic difference validates our architectural decision to prioritize AudioWorklet execution with ScriptProcessor serving only as a fallback for legacy browser support.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/fig7_latency.png}
+  \caption{Latency breakdown visualization presenting pipeline stage contributions as a stacked horizontal bar chart. The visualization clearly distinguishes between audio-thread stages (microphone capture, buffer accumulation, DSP processing) and main-thread stages (synthesis, rendering), with the thread boundary marked. A reference line at 100ms indicates the perceptual threshold, demonstrating the substantial margin between achieved latency and the limit for perceived simultaneity.}
+  \label{fig:latency_breakdown}
+\end{figure}
+
+\section{Computational Complexity Analysis}\label{sec:complexity}
+
+Algorithmic analysis confirms that all pipeline stages complete well within the available per-frame computational budget, with substantial headroom remaining for potential future enhancements. The 23-millisecond frame period defined by our 1024-sample analysis window at 44.1kHz sample rate establishes the computational budget within which all analysis must complete to maintain real-time operation.
+
+The YIN algorithm's $O(N^2)$ complexity with $N=512$ (half the analysis window) requires 262,144 multiply-accumulate operations per frame. Modern CPU architectures executing these operations in their floating-point units complete this workload in approximately 500 microseconds, representing only 2\% of the available frame budget. The quadratic scaling would become problematic for substantially larger analysis windows, but our current configuration leaves extensive headroom.
+
+The FFT computation's $O(N \log N)$ complexity requires approximately 5,120 operations for our 1024-point transform, completing in approximately 100 microseconds. The dramatic efficiency improvement over $O(N^2)$ naive DFT computation---which would require over one million operations---validates the implementation investment in the Cooley-Tukey algorithm with precomputed twiddle factors.
+
+Linear-time spectral feature extraction adds negligible overhead, with spectral centroid and flatness computations each requiring single passes over the $N/2 = 512$ frequency bins. Constant-time Kalman and EMA filtering operations contribute microsecond-scale overhead that proves immeasurable against the timing noise floor.
+
+The MusicRNN neural inference presents a distinct computational profile, requiring 250--500 milliseconds that vastly exceeds the per-frame budget. However, the asynchronous execution architecture isolates this computation from the real-time audio path, scheduling inference during browser idle periods through \texttt{requestIdleCallback}. The 2-second minimum interval between generation attempts ensures that inference completion does not become a blocking dependency for subsequent generations.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/tab2_complexity.jpg}
+  \caption{Computational complexity summary presenting asymptotic complexity, measured execution time, and operations per frame for each pipeline stage. The table demonstrates that the aggregate computational requirements remain well within the per-frame budget, with substantial headroom enabling potential future enhancements.}
+  \label{tab:complexity_summary}
+\end{figure}
+
+\section{Cross-Browser Compatibility}\label{sec:compatibility}
+
+Compatibility testing across major browser implementations confirms broad deployability while identifying platform-specific considerations affecting performance optimization and feature availability. The system achieves full functionality on Chromium-based browsers (Chrome, Edge) and Firefox, with partial functionality on Safari requiring fallback code paths for unavailable APIs.
+
+Chromium-based browsers provide optimal performance through comprehensive AudioWorklet support, efficient WebAssembly execution for potential future optimizations, and full \texttt{requestIdleCallback} availability for neural inference scheduling. Chrome's ``Output Buffer Bypass'' feature further reduces latency by eliminating a buffering stage from the audio output path. Testing confirms consistent sub-60ms latency across Chrome and Edge on both Windows and macOS platforms.
+
+Firefox AudioWorklet support, stabilized in version 76 released in May 2020, provides equivalent functionality to Chromium implementations with comparable latency characteristics. Mozilla's documentation of AudioWorklet performance characteristics informed several implementation decisions, and testing confirms that Firefox delivers latency competitive with Chromium browsers.
+
+Safari presents the most challenging compatibility target due to partial AudioWorklet support and missing \texttt{requestIdleCallback} API. Our implementation includes fallback to \texttt{setTimeout}-based scheduling for neural inference on Safari, accepting slightly less optimal CPU utilization in exchange for functional AI accompaniment. AudioWorklet performance on Safari exhibits higher variance than Chromium or Firefox, potentially reflecting implementation maturity differences. Mobile Safari on iOS presents additional constraints related to audio context activation requirements that necessitate explicit user gesture handling.

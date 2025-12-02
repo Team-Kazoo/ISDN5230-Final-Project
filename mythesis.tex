@@ -32,38 +32,25 @@
   %% If one item is not applicable, just leave it {}.
   %% Please do not leave any blank lines without {}.
   info = {
-    degree        = {phd},  %% phd / mphil
-    title         = {Goodbye\texorpdfstring{\\}{, }All of Evangelion},
-    keywords      = {Neon, Genesis, Evangelion},
-    author        = {Cruel Angel},
-    school        = {School of SEELE},
-    department    = {Department of NERV},
-    program       = {Human Instrumentality},
+    degree        = {mphil},  %% phd / mphil
+    title         = {Mambo Whistle: Real-Time Browser-Based Vocal-to-Instrument Synthesis with Neural Harmonic Accompaniment},
+    keywords      = {Real-time audio processing, fundamental frequency estimation, neural music generation, Web Audio API, browser-based synthesis, human-computer interaction},
+    author        = {Ziming Wang, Chuyue Gong, Tianxing Chang},
+    school        = {Academy of Interdisciplinary Studies},
+    department    = {Final Project Report},
+    program       = {ISDN5230 - Artificial Intelligence of Things for Healthcare},
     major         = {},
-    supervisor    = {Prof. Adams},
+    supervisor    = {Prof. Qijia Shao},
     %% Co-supervisor; leave it {} if not available
-    co-supervisor = {Prof. Lilith},
-    submit-month  = {October 2025},      % <month year>
-    submit-date   = {31 October 2025},   % <date month year>
-    defend-date   = {2 November 2025},   % <date month year>
-    depthead      = {Prof. Ikari Yui, Head of Department},
-    %% reviewers only for some departments, like ECE
-    reviewer      = {Prof. Ikari Gendo (Chairperson), 
-                     Prof. Adams (Supervisor),
-                     Prof. Lilith (Co-Supervisor),
-                     Prof. DDD,
-                     Prof. EEE,
-                     Prof. FFF},
-    reviewerdept  = {Department of Electronic and Computer Engineering,
-                     Department of ECE,
-                     Department of ECE,
-                     Department of ECE,
-                     Department of ECE,
-                     Department of Physics},
-    reviewerext   = {Prof. FFF (External Examiner),
-                     Department of HH\\{University of UU, at VV}},
-    % reviewerext   = {},
-    city          = {Geo Front},
+    co-supervisor = {},
+    submit-month  = {December 2025},      % <month year>
+    submit-date   = {2 December 2025},   % <date month year>
+    defend-date   = {},
+    depthead      = {},
+    reviewer      = {},
+    reviewerdept  = {},
+    reviewerext   = {},
+    city          = {},
   }
 }
 
@@ -115,25 +102,14 @@
 %% -------------------------------------------------
 
 \frontmatter
-\maketitle 
+\maketitle
 
-%% Revision to the Guidelines on Thesis Preparation [w.e.f. Spring 2024/25]
-%% Abstract should be positioned immediately after the Title page
+%% Abstract
 \input{chapters/Pre_Abstract.tex}
-\authorization
-\signaturepage
 
-\input{chapters/Pre_Acknowledgements.tex}
-
+%% Table of Contents
 \tableofcontents
 \listoffigures
-\listoftables
-% TODO: see \cmd{\newlistofalgorithms}
-\newlistofalgorithms % This is to maintain the same appearance
-
-%% Dedication and Preface are optional
-%\input{chapters/Pre_Dedication.tex}
-%\input{chapters/Pre_Preface.tex}
 
 %% -------------------------------------------------
 %% Main body
@@ -141,7 +117,10 @@
 \mainmatter
 
 \input{chapters/Ch_Introduction.tex}
-\input{chapters/Ch_ExampleChapter.tex}
+\input{chapters/Ch_RelatedWork.tex}
+\input{chapters/Ch_SystemDesign.tex}
+\input{chapters/Ch_Evaluation.tex}
+\input{chapters/Ch_Discussion.tex}
 \input{chapters/Ch_Conclusion.tex}
 
 %% -------------------------------------------------
@@ -153,10 +132,8 @@
 %% -------------------------------------------------
 %% Appendices
 %% -------------------------------------------------
-\appendix
-
-\input{chapters/Appendix_Publications.tex}
-\input{chapters/Appendix_Requirements.tex}
-\input{chapters/Appendix_Figures.tex}
+%% Uncomment if you need appendices
+% \appendix
+% \input{chapters/Appendix_Publications.tex}
 
 \end{document}

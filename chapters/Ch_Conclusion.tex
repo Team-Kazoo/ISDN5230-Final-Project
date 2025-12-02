@@ -1,3 +1,7 @@
-\chapter{Conclusions}\label{chap:conclusions}
+\chapter{Conclusion}\label{chap:conclusion}
 
-Some conclusion text.
+This thesis presented Mambo Whistle, a real-time browser-based vocal synthesis system that achieves sub-100-millisecond end-to-end latency through careful integration of classical digital signal processing with neural sequence generation. Our hybrid architecture partitions processing responsibilities between latency-critical DSP algorithms executing on dedicated AudioWorklet threads and computationally intensive neural inference scheduled during browser idle periods, achieving performance characteristics previously associated only with native code execution.
+
+The demonstrated contributions include a novel architecture enabling AI-augmented musical interaction within browser constraints, an optimized implementation achieving 50--60 milliseconds audio processing latency, comprehensive evaluation through 235 automated tests and detailed performance analysis, and the first demonstration of real-time MusicRNN integration with browser-based pitch detection. These contributions advance the state of accessible music technology by demonstrating that sophisticated audio synthesis requiring neither specialized hardware nor software installation can be delivered through standard web browsers.
+
+The system is made available as open-source software to enable continued research into accessible music technology, neural audio synthesis, and real-time browser-based signal processing. We anticipate that the architectural patterns and optimization strategies documented in this work will inform future browser-based audio applications, contributing to the broader goal of democratizing access to expressive musical instruments.
