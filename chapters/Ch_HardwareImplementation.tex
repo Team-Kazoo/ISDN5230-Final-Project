@@ -1,0 +1,452 @@
+\chapter{Hardware Implementation}\label{chap:hardware}
+
+%% =============================================================================
+%% WRITING INSTRUCTIONS FOR YOUR COLLEAGUE
+%% =============================================================================
+%% This chapter describes the custom audio acquisition hardware (ESP32-C3 PCB).
+%% Target length: 8-12 pages
+%%
+%% KEY POINTS TO COVER:
+%% - Why custom hardware? (browser audio limitations)
+%% - System architecture (MEMS → Codec → MCU → USB)
+%% - Firmware design and implementation
+%% - Web Serial API integration
+%% - Performance comparison with browser-native audio
+%%
+%% WRITING STYLE:
+%% - Match the technical depth of Chapter 3
+%% - Use active voice: "We designed...", "The firmware implements..."
+%% - Explain design rationale, not just configuration
+%% - Include code snippets (10-20 lines max per example)
+%% - Compare with alternatives where relevant
+%%
+%% REQUIRED DATA:
+%% See the detailed writing guide document for the complete checklist
+%% =============================================================================
+
+\section{Motivation and Design Rationale}\label{sec:hw_motivation}
+
+%% TODO: Write this section (target: 1.5-2 pages)
+%%
+%% OUTLINE:
+%% 1. Browser audio limitations (3 main points):
+%%    - Latency unpredictability (varies 40-80ms)
+%%    - Lack of low-level control (sample format, buffer sizes)
+%%    - Browser implementation differences (Chrome vs Firefox vs Safari)
+%%
+%% 2. Why custom hardware matters for our application:
+%%    - Real-time performance requirements (sub-100ms end-to-end)
+%%    - Healthcare/therapeutic use cases need consistency
+%%    - Research reproducibility across different deployments
+%%
+%% 3. Design goals and requirements:
+%%    - End-to-end latency: < 20ms (mic to AudioWorklet)
+%%    - Sample rate: 44.1kHz, 16-bit resolution
+%%    - Plug-and-play: USB, no driver installation
+%%    - Cost-effective: BOM target < $15
+%%    - Compact: pocket-sized form factor
+%%
+%% SUGGESTED STRUCTURE:
+%% Paragraph 1: Problem statement - browser audio limitations
+%% Paragraph 2: Impact on our vocal synthesis application
+%% Paragraph 3: How hardware addresses these challenges
+%% Paragraph 4: Design goals (can use itemized list)
+%% Paragraph 5: Overview of our solution approach
+%%
+%% EXAMPLE OPENING:
+%% "While the Web Audio API provides convenient access to microphone input
+%% through the getUserMedia interface, this convenience comes with inherent
+%% limitations that impact real-time audio applications..."
+
+[WRITE YOUR CONTENT HERE]
+
+
+\section{Hardware Architecture and Component Selection}\label{sec:hw_architecture}
+
+%% TODO: Write this section (target: 2-3 pages)
+%%
+%% REQUIRED ELEMENTS:
+%% 1. System block diagram (Figure ~\ref{fig:hw_architecture})
+%%    MEMS Mic → I2S → ES8311 ADC → I2S → ESP32-C3 → USB → PC
+%%
+%% 2. Component descriptions with selection rationale:
+%%
+%%    MEMS Microphone:
+%%    - Model number: [SPECIFY]
+%%    - Key specs: SNR, sensitivity, frequency response
+%%    - Why chosen: digital I2S output, low cost, small size
+%%
+%%    ES8311 Audio Codec:
+%%    - 24-bit stereo ADC/DAC
+%%    - Programmable gain, high-pass filter
+%%    - Why chosen: ESP32 I2S compatibility, integrated features
+%%
+%%    ESP32-C3 Microcontroller:
+%%    - RISC-V 32-bit @ 160MHz
+%%    - 400KB SRAM, hardware I2S controller
+%%    - Native USB 1.1 full-speed support
+%%    - Why chosen: cost, performance, built-in USB, Arduino/ESP-IDF support
+%%
+%% 3. PCB design highlights:
+%%    - Number of layers (2-layer recommended for cost)
+%%    - Form factor and dimensions
+%%    - Power supply architecture (USB → LDO → 3.3V)
+%%    - I2S signal routing (impedance matching, trace length)
+%%    - USB connector type (USB-C recommended)
+%%
+%% 4. Power consumption analysis (if measured):
+%%    - Idle current
+%%    - Active streaming current
+%%    - Total power budget
+%%
+%% SUGGESTED FIGURES:
+%% - Figure 4.1: System block diagram (REQUIRED)
+%% - Figure 4.2: PCB photograph or 3D render (OPTIONAL but recommended)
+%% - Figure 4.3: Signal flow timing diagram (OPTIONAL)
+%%
+%% CODE EXAMPLE (component initialization):
+%% You can include brief snippets like ES8311 I2C configuration
+%%
+%% WRITING TIPS:
+%% - For each component, explain: What it does → Why we chose it → Key specs
+%% - Compare with alternatives briefly (e.g., why ESP32-C3 vs ESP32-S3?)
+%% - Don't just list specifications; explain their significance
+%%
+%% EXAMPLE TEXT:
+%% "The ESP32-C3 provides hardware I2S support through dedicated peripherals,
+%% eliminating the timing uncertainty that software bit-banging would introduce.
+%% Its native USB 1.1 interface enables direct connection to the host computer
+%% without requiring external USB-to-serial converters..."
+
+[WRITE YOUR CONTENT HERE]
+
+\begin{figure}[htbp]
+  \centering
+  %% TODO: Insert your hardware block diagram here
+  %% \includegraphics[width=0.9\textwidth]{figures/hardware_block_diagram.pdf}
+  \fbox{\parbox{0.9\textwidth}{\centering\vspace{2cm}
+  [INSERT HARDWARE BLOCK DIAGRAM HERE]\\
+  MEMS Mic $\rightarrow$ ES8311 $\rightarrow$ ESP32-C3 $\rightarrow$ USB $\rightarrow$ Browser
+  \vspace{2cm}}}
+  \caption{Hardware system architecture showing signal flow from MEMS microphone through audio codec and microcontroller to USB interface. The ESP32-C3 implements I2S audio capture and USB CDC serial transmission, while the ES8311 codec performs analog-to-digital conversion with programmable gain and filtering.}
+  \label{fig:hw_architecture}
+\end{figure}
+
+
+\section{ESP32-C3 Firmware Design}\label{sec:firmware}
+
+%% TODO: Write this section (target: 3-4 pages)
+%%
+%% This is the most technical section. Include implementation details but
+%% keep it at the right abstraction level.
+%%
+%% SUBSECTION STRUCTURE (you can use \subsection if needed):
+%%
+%% 3.1 Firmware Architecture Overview
+%% - Three-layer architecture diagram
+%% - Application layer: USB state machine, buffer management
+%% - HAL/Driver layer: I2S driver, USB CDC driver, ES8311 config
+%% - Hardware layer: I2S peripheral, USB peripheral
+%%
+%% 3.2 I2S Audio Capture Implementation
+%% - I2S configuration parameters and rationale:
+%%   * Mode: I2S_MODE_MASTER | I2S_MODE_RX
+%%   * Sample rate: 44100 Hz (why?)
+%%   * Bits per sample: 16 (why not 24?)
+%%   * Channel: Mono vs Stereo configuration
+%%   * DMA buffer size: [SPECIFY] samples (trade-off analysis)
+%%
+%% - Code example: I2S initialization
+%% - Interrupt handling and DMA management
+%% - Error handling and recovery
+%%
+%% 3.3 Audio Buffer Management
+%% - Ring buffer architecture (why ring buffer?)
+%% - Buffer size calculation (latency vs overflow prevention)
+%% - Zero-copy optimizations where possible
+%% - Flow control and backpressure handling
+%%
+%% 3.4 USB CDC Serial Implementation
+%% - USB descriptor configuration
+%% - Bulk transfer mode and packet sizes
+%% - Custom framing protocol (if any):
+%%   * Packet format: [HEADER | SAMPLE_COUNT | AUDIO_DATA | CRC?]
+%%   * Synchronization mechanism
+%% - Transfer scheduling to minimize latency
+%%
+%% 3.5 Latency Optimization Strategies
+%% - Minimize unnecessary memory copies
+%% - DMA buffer sizing trade-offs
+%% - Interrupt priority configuration
+%% - CPU frequency vs power consumption
+%%
+%% KEY CODE SNIPPETS TO INCLUDE (pseudo-code or simplified):
+%% 1. I2S initialization structure (~15 lines)
+%% 2. Main audio processing loop (pseudo-code, ~20 lines)
+%% 3. USB transmission function signature and logic (simplified)
+%%
+%% EXAMPLE CODE BLOCK:
+%% \begin{lstlisting}[language=C, caption={I2S configuration for audio capture}]
+%% i2s_config_t i2s_config = {
+%%     .mode = I2S_MODE_MASTER | I2S_MODE_RX,
+%%     .sample_rate = 44100,
+%%     .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
+%%     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
+%%     .communication_format = I2S_COMM_FORMAT_I2S,
+%%     .dma_buf_count = 4,
+%%     .dma_buf_len = 512,  // Trade-off: latency vs CPU overhead
+%%     .use_apll = false,
+%%     .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1
+%% };
+%% \end{lstlisting}
+%%
+%% MEASUREMENTS TO INCLUDE:
+%% - Measured CPU utilization during streaming
+%% - Measured latency contribution of firmware processing
+%% - Memory usage (heap, stack)
+%%
+%% WRITING TIPS:
+%% - Explain WHY you made each configuration choice
+%% - Discuss trade-offs (e.g., buffer size: smaller = lower latency but
+%%   higher CPU overhead and risk of underrun)
+%% - Compare with alternative approaches where relevant
+%% - Keep code examples short and well-commented
+%% - Use figures/diagrams for complex flows (state machines, data flow)
+
+[WRITE YOUR CONTENT HERE]
+
+
+\section{Web Serial API Integration}\label{sec:web_serial}
+
+%% TODO: Write this section (target: 2-2.5 pages)
+%%
+%% This section bridges hardware (firmware) and software (web application).
+%%
+%% OUTLINE:
+%%
+%% 4.1 Web Serial API Overview
+%% - W3C specification status
+%% - Browser support (Chrome/Edge, not Firefox/Safari)
+%% - Security model: user permission required
+%% - Why Serial vs WebUSB? (simpler, CDC class = no custom driver)
+%%
+%% 4.2 Device Detection and Connection
+%% - Requesting serial port with vendor/product ID filtering
+%% - Opening port with configuration (baud rate is ignored for USB CDC)
+%% - Error handling: device not found, permission denied
+%%
+%% JavaScript code example:
+%% \begin{lstlisting}[language=JavaScript]
+%% const port = await navigator.serial.requestPort({
+%%     filters: [{ usbVendorId: 0x303A }]  // Espressif VID
+%% });
+%% await port.open({ baudRate: 921600 });  // Ignored for USB CDC
+%% \end{lstlisting}
+%%
+%% 4.3 Audio Data Reception and Parsing
+%% - Reading from serial port (streaming API)
+%% - Parsing audio packets (match firmware framing)
+%% - Converting Uint8Array to Int16Array for audio samples
+%% - Handling incomplete packets and synchronization
+%%
+%% Code example: Reading loop
+%%
+%% 4.4 Integration with AudioWorklet Pipeline
+%% - Architecture: Web Serial (Main Thread) → MessagePort → AudioWorklet
+%% - Why not process in main thread? (latency, UI blocking)
+%% - Sample buffering for AudioWorklet consumption
+%% - Synchronization with synthesis pipeline
+%%
+%% 4.5 Dual-Mode Architecture: Hardware vs Browser Audio
+%% - Feature detection: navigator.serial availability
+%% - User choice UI: "Use external hardware" toggle
+%% - Graceful fallback to getUserMedia
+%% - Switching between modes at runtime (if supported)
+%%
+%% FIGURES:
+%% - Data flow diagram: Serial → Main Thread → MessagePort → AudioWorklet
+%% - Comparison diagram: Hardware mode vs Browser mode architecture
+%%
+%% MEASUREMENTS:
+%% - JavaScript processing overhead (main thread)
+%% - MessagePort transfer latency
+%% - Total browser-side latency contribution
+%%
+%% WRITING TIPS:
+%% - Explain the threading model clearly (Serial API = main thread only)
+%% - Discuss security implications of Serial API
+%% - Show how this integrates with existing AudioWorklet code from Chapter 3
+%% - Include error handling strategies
+
+[WRITE YOUR CONTENT HERE]
+
+
+\section{Performance Analysis and Validation}\label{sec:hw_performance}
+
+%% TODO: Write this section (target: 2-3 pages)
+%%
+%% This section presents measurements and validates the hardware approach.
+%%
+%% OUTLINE:
+%%
+%% 5.1 End-to-End Latency Breakdown
+%%
+%% Create a detailed latency budget table:
+%%
+%% \begin{table}[htbp]
+%% \centering
+%% \caption{Hardware audio acquisition latency breakdown}
+%% \label{tab:hw_latency}
+%% \begin{tabular}{lrrr}
+%% \toprule
+%% \textbf{Stage} & \textbf{Typical (ms)} & \textbf{Max (ms)} & \textbf{Notes} \\
+%% \midrule
+%% MEMS Mic Group Delay    & 0.5  & 0.5  & Datasheet specification \\
+%% ES8311 ADC Conversion   & 1.0  & 1.5  & Includes internal buffering \\
+%% I2S DMA Buffer          & 11.6 & 11.6 & 512 samples @ 44.1kHz \\
+%% ESP32-C3 Processing     & 0.3  & 1.0  & Ring buffer write \\
+%% USB Transmission        & 1.0  & 2.0  & Full-speed (1ms frames) \\
+%% OS Serial Driver        & 1.5  & 3.0  & Kernel buffering \\
+%% Web Serial API          & 2.0  & 4.0  & Browser processing \\
+%% MessagePort Transfer    & 0.5  & 1.0  & To AudioWorklet \\
+%% \midrule
+%% \textbf{Total}          & \textbf{18.4} & \textbf{24.6} & Hardware mode \\
+%% \midrule
+%% getUserMedia (Browser)  & 55.0 & 85.0 & For comparison \\
+%% \bottomrule
+%% \end{tabular}
+%% \end{table}
+%%
+%% 5.2 Latency Measurement Methodology
+%% - How did you measure each stage?
+%% - Tools used: oscilloscope, software timestamps, logic analyzer?
+%% - Measurement setup description
+%% - Accuracy and limitations of measurements
+%%
+%% 5.3 Audio Quality Metrics (if measured)
+%% - Signal-to-Noise Ratio (SNR): [SPECIFY] dB
+%% - Total Harmonic Distortion (THD): [SPECIFY] %
+%% - Frequency response (if measured)
+%% - Comparison with browser audio quality
+%%
+%% 5.4 Comparison with Browser-Native Audio
+%% - Latency: hardware wins significantly
+%% - Consistency: standard deviation across runs
+%% - CPU usage: might be higher due to serial overhead?
+%% - Audio quality: comparable or better?
+%% - Trade-offs: requires hardware, not as universal
+%%
+%% Create a comparison table or bar chart.
+%%
+%% 5.5 Power Consumption and Thermal Analysis (optional)
+%% - Power draw during idle and active streaming
+%% - ESP32-C3 thermal behavior
+%% - Battery operation potential (if relevant)
+%%
+%% 5.6 Reliability and Robustness Testing
+%% - Long-duration testing results (hours of continuous operation)
+%% - USB re-connection handling
+%% - Error recovery testing (cable unplug/replug)
+%% - Multi-device testing (if you have multiple units)
+%%
+%% FIGURES/TABLES REQUIRED:
+%% - Table 4.1: Latency breakdown (REQUIRED)
+%% - Figure 4.X: Latency comparison bar chart (RECOMMENDED)
+%% - Figure 4.X: Oscilloscope trace showing latency measurement (OPTIONAL)
+%%
+%% WRITING TIPS:
+%% - Be honest about measurements: state uncertainty/margin of error
+%% - Distinguish between theoretical calculations and actual measurements
+%% - Discuss limitations: what couldn't you measure? why?
+%% - Compare fairly: acknowledge browser audio advantages (universality, etc.)
+
+[WRITE YOUR CONTENT HERE]
+
+\begin{table}[htbp]
+\centering
+\caption{Comparison of hardware-accelerated vs browser-native audio acquisition}
+\label{tab:hw_comparison}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Hardware Mode} & \textbf{Browser Mode} \\
+\midrule
+End-to-end Latency (typ.)  & XX ms & XX ms \\
+Latency Std Dev            & XX ms & XX ms \\
+CPU Usage (main thread)    & XX\%  & XX\%  \\
+Audio SNR                  & XX dB & XX dB \\
+Deployment Complexity      & Requires PCB & Universal \\
+Cost per Unit              & \$XX  & \$0 \\
+Browser Compatibility      & Chrome/Edge only & All browsers \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Discussion and Limitations}\label{sec:hw_discussion}
+
+%% TODO: Write this section (target: 1-1.5 pages)
+%%
+%% Be honest about trade-offs and limitations.
+%%
+%% OUTLINE:
+%%
+%% 6.1 Advantages of Hardware Approach
+%% - Deterministic low latency (<20ms vs 40-80ms)
+%% - Consistent performance across different computers
+%% - Independence from browser audio stack evolution
+%% - Potential for on-board preprocessing (future)
+%% - Better control over audio parameters
+%%
+%% 6.2 Limitations and Trade-offs
+%% - Requires physical hardware (cost, availability)
+%% - Limited to Chrome/Edge (Web Serial API support)
+%% - Additional complexity for end users
+%% - Manufacturing and distribution challenges
+%% - Not feasible for web-only deployment scenarios
+%%
+%% 6.3 When to Use Hardware vs Browser Audio?
+%% - Hardware mode: professional use, therapy applications, research
+%% - Browser mode: casual use, demonstrations, universal access
+%% - Recommendation framework based on use case
+%%
+%% 6.4 Future Hardware Enhancements
+%% - On-board pitch detection (offload from browser)
+%% - Wireless connectivity (BLE audio?)
+%% - Multiple microphone inputs (beamforming?)
+%% - Integration with physiological sensors (for healthcare)
+%% - Open-source hardware: PCB files, firmware on GitHub
+%%
+%% WRITING TIPS:
+%% - Be balanced: acknowledge both strengths and weaknesses
+%% - Don't oversell the hardware (it's not always better)
+%% - Provide actionable guidance on when to use which mode
+%% - Connect limitations to future work opportunities
+
+[WRITE YOUR CONTENT HERE]
+
+%% =============================================================================
+%% END OF CHAPTER
+%% =============================================================================
+%%
+%% FINAL CHECKLIST BEFORE SUBMISSION:
+%% □ All sections written to target length
+%% □ All figures have captions and are referenced in text
+%% □ All tables have captions and are referenced in text
+%% □ Code examples are properly formatted with lstlisting
+%% □ All measurements include units
+%% □ Technical terms are defined on first use
+%% □ Consistent terminology with Chapter 3
+%% □ All \cite{} references are in mythesis.bib
+%% □ Section labels (\label{sec:...}) are used consistently
+%% □ Cross-references (\ref{sec:...}) work correctly
+%% □ Spelling and grammar checked
+%% □ Discussed limitations honestly
+%% □ Figures are high quality (300 DPI for photos, vector for diagrams)
+%%
+%% INTEGRATION CHECKLIST:
+%% □ Updated Abstract to mention hardware
+%% □ Updated Chapter 3 Section 3.1 to mention dual-mode architecture
+%% □ Added hardware evaluation to Chapter 5
+%% □ Added hardware references to mythesis.bib
+%% □ Updated Conclusion to mention hardware contribution
+%% =============================================================================

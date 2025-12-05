@@ -74,3 +74,59 @@ Chromium-based browsers provide optimal performance through comprehensive AudioW
 Firefox AudioWorklet support, stabilized in version 76 released in May 2020, provides equivalent functionality to Chromium implementations with comparable latency characteristics. Mozilla's documentation of AudioWorklet performance characteristics informed several implementation decisions, and testing confirms that Firefox delivers latency competitive with Chromium browsers.
 
 Safari presents the most challenging compatibility target due to partial AudioWorklet support and missing \texttt{requestIdleCallback} API. Our implementation includes fallback to \texttt{setTimeout}-based scheduling for neural inference on Safari, accepting slightly less optimal CPU utilization in exchange for functional AI accompaniment. AudioWorklet performance on Safari exhibits higher variance than Chromium or Firefox, potentially reflecting implementation maturity differences. Mobile Safari on iOS presents additional constraints related to audio context activation requirements that necessitate explicit user gesture handling.
+
+\section{Hardware Performance Evaluation}\label{sec:hardware_eval}
+
+%% =============================================================================
+%% TODO: HARDWARE EVALUATION SECTION
+%% =============================================================================
+%% This section should be written by your colleague after completing Chapter 4.
+%% Target length: 2-3 pages
+%%
+%% CONTENT TO INCLUDE:
+%% 1. Latency measurements comparing hardware vs browser audio
+%% 2. Audio quality metrics (SNR, THD if measured)
+%% 3. Reliability testing results (long-duration tests, reconnection handling)
+%% 4. Cross-platform testing (Windows/Mac/Linux if tested)
+%% 5. Comparison table summarizing key metrics
+%%
+%% SUGGESTED STRUCTURE:
+%% - Subsection 5.5.1: Latency Measurements
+%% - Subsection 5.5.2: Audio Quality Analysis
+%% - Subsection 5.5.3: Reliability and Robustness Testing
+%% - Subsection 5.5.4: Comparative Summary
+%%
+%% This should reference and expand on Section 4.5 from Chapter 4.
+%% =============================================================================
+
+[YOUR COLLEAGUE WILL WRITE HARDWARE EVALUATION HERE]
+
+%% After hardware evaluation, keep the healthcare section below:
+
+\section{Assessment for Healthcare Application Contexts}\label{sec:health_assessment}
+
+While comprehensive clinical efficacy evaluation remains beyond the scope of this technical implementation work, we assess system characteristics relevant to potential therapeutic music interaction applications based on requirements identified in the clinical literature.
+
+\subsection{Latency and Engagement Requirements}
+
+Music therapy research emphasizes immediate feedback as essential for maintaining patient engagement and enabling the sense of control contributing to therapeutic outcomes. Our measured 50--60ms end-to-end latency falls well within the 100ms threshold for perceived simultaneity identified by Wessel and Wright~\cite{wessel2002problems}, suggesting the system provides sufficiently responsive interaction to support therapeutic applications. For comparison, cloud-based music generation systems such as those discussed in Chapter~\ref{chap:related} exhibit latencies of several seconds that would preclude the real-time interaction essential for expressive musical engagement.
+
+\subsection{Deployment Accessibility}
+
+Browser compatibility testing across device capabilities from budget smartphones through professional workstations demonstrates deployment feasibility for diverse populations. This device diversity proves important for reaching populations identified in music therapy research as underserved: elderly individuals who may lack current-generation hardware, students in under-resourced educational settings, and users in developing regions where premium devices are economically inaccessible.
+
+The zero-installation deployment characteristic addresses a practical barrier in healthcare technology adoption. Unlike native applications requiring download, installation, and often administrator privileges unavailable in institutional settings, browser-based applications enable immediate access via URL distribution. Preliminary testing in educational contexts confirmed that users could access the system without IT support, suggesting similar feasibility in community health centers or hospital settings where software installation on shared devices is impractical.
+
+\subsection{Current Limitations for Clinical Deployment}
+
+Several limitations constrain immediate clinical deployment. The system currently provides no mechanisms for session recording or usage tracking that would enable therapists to monitor patient engagement or researchers to collect efficacy data. While such capabilities would be straightforward to implement through browser localStorage APIs or optional encrypted server synchronization, privacy considerations and regulatory requirements necessitate careful design.
+
+The absence of validated outcome measures in our current evaluation precludes claims regarding therapeutic efficacy. Rigorous clinical validation would require controlled studies measuring psychological outcomes using standardized instruments (GAD-7 for anxiety, PHQ-9 for depression, WHO-5 for wellbeing) alongside physiological markers (cortisol, heart rate variability) and behavioral measures (engagement duration, adherence rates) compared against appropriate control conditions.
+
+The monophonic input limitation restricts certain therapeutic activities. Group music therapy sessions involving multiple simultaneous performers would require polyphonic pitch detection---a substantially more complex problem with current algorithms exhibiting reduced accuracy compared to monophonic approaches.
+
+\subsection{Future Validation Directions}
+
+Planned collaboration with licensed music therapists would enable pilot studies evaluating therapeutic potential. Proposed study design would recruit participants experiencing mild-to-moderate anxiety or stress and randomly assign them to voice-controlled synthesis sessions versus passive music listening control conditions, with pre/post assessments using validated instruments. Integration of optional physiological monitoring via smartphone photoplethysmography would provide objective outcome measures complementing self-reported psychological states.
+
+Additional research directions include investigating optimal synthesis parameter configurations for therapeutic contexts (which instrument presets, effect settings, and accompaniment styles maximize engagement?) and exploring whether brief synthesis-based sessions produce measurable reductions in anxiety or stress comparable to validated music therapy protocols documented in recent systematic reviews~\cite{frontiers2025musictherapy}.
