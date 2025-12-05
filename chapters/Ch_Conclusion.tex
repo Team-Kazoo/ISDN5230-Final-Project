@@ -1,22 +1,7 @@
 \chapter{Conclusion}\label{chap:conclusion}
 
-This thesis presented Mambo Whistle, a comprehensive real-time vocal synthesis system that achieves professional-grade audio transformation through two complementary deployment modalities. Our hybrid architecture strategically combines classical digital signal processing algorithms with neural sequence generation, enabling real-time performance on both browser and embedded platforms.
+This thesis presented Mambo Whistle, a real-time browser-based vocal synthesis system that achieves sub-100-millisecond end-to-end latency through careful integration of classical digital signal processing with neural sequence generation. Our hybrid architecture partitions processing responsibilities between latency-critical DSP algorithms executing on dedicated AudioWorklet threads and computationally intensive neural inference scheduled during browser idle periods, achieving performance characteristics previously associated only with native code execution.
 
-The browser-based implementation demonstrates that sophisticated vocal-to-instrument synthesis with AI-powered harmonic accompaniment can be delivered through standard web browsers without software installation. The AudioWorklet-based architecture achieves 50--60ms end-to-end latency through careful buffer management, precomputed lookup tables, and asynchronous neural inference scheduling. This implementation validates that professional-grade audio applications previously requiring native code execution can now be delivered accessibly through web technologies.
+The demonstrated contributions include a novel architecture enabling AI-augmented musical interaction within browser constraints, an optimized implementation achieving 50--60 milliseconds audio processing latency, comprehensive evaluation through 235 automated tests and detailed performance analysis, and the first demonstration of real-time MusicRNN integration with browser-based pitch detection. These contributions advance the state of accessible music technology by demonstrating that sophisticated audio synthesis requiring neither specialized hardware nor software installation can be delivered through standard web browsers.
 
-The embedded implementation on Raspberry Pi 5 demonstrates that the same algorithmic core, ported to native C++ with FFTW3 NEON optimization and TensorFlow Lite inference, achieves 18--24ms latency---a 2.5$\times$ improvement suitable for professional musical performance. The deployment leverages the BCM2712's quad-core Cortex-A76 processor with PREEMPT\_RT real-time Linux, CPU core isolation, and careful thermal management to maintain consistent real-time operation. This implementation validates that an \$80 single-board computer can deliver latency characteristics competitive with dedicated electronic musical instruments.
-
-The demonstrated contributions include:
-
-\begin{itemize}
-    \item A novel hybrid architecture enabling AI-augmented musical interaction across browser and embedded platforms
-    \item Browser implementation achieving 50--60ms latency through AudioWorklet optimization
-    \item Embedded implementation achieving 18--24ms latency on Raspberry Pi 5
-    \item Comprehensive evaluation through 235 automated tests, 72-hour stability testing, and detailed performance profiling
-    \item The first demonstration of real-time MusicRNN integration with browser-based pitch detection
-    \item The first deployment of such a system on Raspberry Pi 5 embedded hardware
-\end{itemize}
-
-These contributions advance the state of accessible music technology by demonstrating that low-latency vocal synthesis with neural accompaniment can be delivered both through standard web browsers for universal accessibility and through embedded hardware for professional applications. The dual-deployment architecture provides a template for future projects requiring both broad accessibility and high-performance variants.
-
-The system is made available as open-source software at \texttt{https://github.com/Team-Kazoo/ISDN5230-Final-Project} to enable continued research into accessible music technology, neural audio synthesis, and real-time signal processing on both web and embedded platforms. We anticipate that the architectural patterns, optimization strategies, and deployment procedures documented in this work will inform future audio applications across the accessibility-performance spectrum, contributing to the broader goal of democratizing access to expressive musical instruments for users worldwide.
+The system is made available as open-source software to enable continued research into accessible music technology, neural audio synthesis, and real-time browser-based signal processing. We anticipate that the architectural patterns and optimization strategies documented in this work will inform future browser-based audio applications, contributing to the broader goal of democratizing access to expressive musical instruments.
